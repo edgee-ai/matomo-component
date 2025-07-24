@@ -1,0 +1,36 @@
+manifest-version = 1
+
+[component]
+name = "matomo"
+version = "0.1.0"
+
+category = "data-collection"
+subcategory = "analytics"
+description = "Example Rust component for data collection"
+documentation = "https://github.com/edgee-cloud/matomo-component"
+repository = "https://github.com/edgee-cloud/matomo-component"
+language = "Rust"
+wit-version = "1.0.0"
+
+[component.build]
+command = "cargo build --target wasm32-wasip2 --release --target-dir ./target && rm -f ./matomo.wasm && mv ./target/wasm32-wasip2/release/matomo.wasm ./matomo.wasm"
+output_path = "matomo.wasm"
+
+[component.settings.authentication_token]
+title = "Matomo Authentication Token"
+type = "string"
+required = false
+description = "Optional token used for authenticated tracking (e.g. for IP override or retroactive events). You can generate it in your Matomo user settings under the Security tab."
+secret = true
+
+[component.settings.site_id]
+title = "Matomo Site ID"
+type = "string"
+required = true
+description = "The numerical site ID from your Matomo dashboard used to identify which site the data belongs to."
+
+[component.settings.endpoint_url]
+title = "Matomo Endpoint URL"
+type = "string"
+required = true
+description = "The base URL of your Matomo instance, including protocol (e.g., https://matomo.example.com/)."
