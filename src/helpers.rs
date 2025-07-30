@@ -42,7 +42,7 @@ pub fn enrich_with_page_context(
     insert_if_nonempty(map, "e_c", &page.category);
 
     for (k, v) in &page.properties {
-        cvars.insert(format!("page_{}", k), v.clone());
+        cvars.insert(format!("page_{k}"), v.clone());
     }
 
     if !page.keywords.is_empty() {
@@ -73,7 +73,7 @@ pub fn enrich_with_track_context(
                 map.insert("e_v".to_string(), v.clone());
             }
             _ => {
-                cvars.insert(format!("track_{}", k), v.clone());
+                cvars.insert(format!("track_{k}"), v.clone());
             }
         }
     }
@@ -120,7 +120,7 @@ pub fn enrich_with_user_context(
         map.insert("cid".into(), cid);
     }
     for (k, v) in &user.properties {
-        cvars.insert(format!("user_{}", k), v.clone());
+        cvars.insert(format!("user_{k}"), v.clone());
     }
 }
 
