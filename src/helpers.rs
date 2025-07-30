@@ -2,6 +2,7 @@
 use crate::exports::edgee::components::data_collection::{
     Campaign, Client, PageData, Session, TrackData, UserData,
 };
+use serde_json::{json, Map as JsonMap};
 use std::collections::HashMap;
 
 pub fn insert_if_nonempty(map: &mut HashMap<String, String>, key: &str, value: &str) {
@@ -10,19 +11,21 @@ pub fn insert_if_nonempty(map: &mut HashMap<String, String>, key: &str, value: &
     }
 }
 
-pub fn to_cvar(vars: HashMap<String, String>) -> Option<String> {
+pub fn to_cvar(mut vars: HashMap<String, String>) -> Option<String> {
+    vars.retain(|_, v| !v.trim().is_empty());
     if vars.is_empty() {
-        None
-    } else {
-        // Matomo _cvar expects JSON string: {"1":["key","value"],...}
-        let mut cvars = serde_json::Map::new();
-        let mut idx = 1;
-        for (k, v) in vars {
-            cvars.insert(idx.to_string(), serde_json::json!([k, v]));
-            idx += 1;
-        }
-        Some(serde_json::to_string(&cvars).unwrap())
+        return None;
     }
+    let mut cvars = JsonMap::new();
+    let mut idx = 1;
+    for (k, v) in vars {
+        cvars.insert(idx.to_string(), json!([k, v]));
+        idx += 1;
+        if idx > 5 {
+            break;
+        }
+    }
+    Some(serde_json::to_string(&cvars).unwrap())
 }
 
 pub fn enrich_with_page_context(
@@ -34,11 +37,14 @@ pub fn enrich_with_page_context(
     insert_if_nonempty(map, "url", &page.url);
     insert_if_nonempty(map, "urlref", &page.referrer);
     insert_if_nonempty(map, "search", &page.search);
-    insert_if_nonempty(map, "_cvar", &page.category);
-    // add custom page props
+    insert_if_nonempty(map, "e_n", &page.name);
+    insert_if_nonempty(map, "e_v", &page.path);
+    insert_if_nonempty(map, "e_c", &page.category);
+
     for (k, v) in &page.properties {
         cvars.insert(format!("page_{}", k), v.clone());
     }
+
     if !page.keywords.is_empty() {
         cvars.insert(
             "page_keywords".into(),
@@ -54,9 +60,47 @@ pub fn enrich_with_track_context(
 ) {
     insert_if_nonempty(map, "e_a", &track.name);
     insert_if_nonempty(map, "e_c", "track");
-    // Custom track props
+
     for (k, v) in &track.properties {
-        cvars.insert(format!("track_{}", k), v.clone());
+        match k.as_str() {
+            "category" => {
+                map.insert("e_c".to_string(), v.clone());
+            }
+            "label" => {
+                map.insert("e_n".to_string(), v.clone());
+            }
+            "value" => {
+                map.insert("e_v".to_string(), v.clone());
+            }
+            _ => {
+                cvars.insert(format!("track_{}", k), v.clone());
+            }
+        }
+    }
+
+    if !track.products.is_empty() {
+        let items: Vec<_> = track
+            .products
+            .iter()
+            .map(|product| {
+                let map: HashMap<_, _> = product.iter().cloned().collect();
+                let sku = map.get("sku").cloned().unwrap_or_default();
+                let name = map.get("name").cloned().unwrap_or_default();
+                let category = map.get("category").cloned().unwrap_or_default();
+                let price = map
+                    .get("price")
+                    .and_then(|p| p.parse::<f64>().ok())
+                    .unwrap_or(0.0);
+                let quantity = map
+                    .get("quantity")
+                    .and_then(|q| q.parse::<i32>().ok())
+                    .unwrap_or(1);
+                json!([sku, name, category, price, quantity])
+            })
+            .collect();
+        if let Ok(json) = serde_json::to_string(&items) {
+            map.insert("ec_items".into(), json);
+        }
     }
 }
 
@@ -67,6 +111,13 @@ pub fn enrich_with_user_context(
 ) {
     if !user.user_id.trim().is_empty() {
         insert_if_nonempty(map, "uid", &user.user_id);
+    } else {
+        // fallback cid : required by Matomo
+        let cid = hex::encode(user.anonymous_id.clone())
+            .chars()
+            .take(16)
+            .collect::<String>();
+        map.insert("cid".into(), cid);
     }
     for (k, v) in &user.properties {
         cvars.insert(format!("user_{}", k), v.clone());
@@ -83,7 +134,7 @@ pub fn enrich_with_session_context(
         "new_visit",
         if session.session_start { "1" } else { "" },
     );
-    map.insert("session_count".into(), session.session_count.to_string());
+    insert_if_nonempty(map, "session_count", &session.session_count.to_string());
     cvars.insert("session_first_seen".into(), session.first_seen.to_string());
     cvars.insert("session_last_seen".into(), session.last_seen.to_string());
 }
@@ -93,7 +144,12 @@ pub fn enrich_with_campaign_context(map: &mut HashMap<String, String>, campaign:
     insert_if_nonempty(map, "_rck", &campaign.term);
 }
 
-pub fn enrich_with_client_context(map: &mut HashMap<String, String>, client: &Client) {
+pub fn enrich_with_client_context(
+    map: &mut HashMap<String, String>,
+    client: &Client,
+    cvars: &mut HashMap<String, String>,
+    allow_sensitive: bool,
+) {
     insert_if_nonempty(map, "ua", &client.user_agent);
     insert_if_nonempty(map, "lang", &client.locale);
     insert_if_nonempty(map, "timezone", &client.timezone);
@@ -104,8 +160,18 @@ pub fn enrich_with_client_context(map: &mut HashMap<String, String>, client: &Cl
     );
     insert_if_nonempty(map, "os", &client.os_name);
     insert_if_nonempty(map, "os_version", &client.os_version);
-    insert_if_nonempty(map, "model", &client.user_agent_model);
-    insert_if_nonempty(map, "country", &client.country_code.to_lowercase());
-    insert_if_nonempty(map, "region", &client.region);
-    insert_if_nonempty(map, "city", &client.city);
+
+    if !client.user_agent_model.trim().is_empty() {
+        cvars.insert("client_model".into(), client.user_agent_model.clone());
+    }
+
+    if allow_sensitive {
+        insert_if_nonempty(map, "country", &client.country_code.to_lowercase());
+        insert_if_nonempty(map, "region", &client.region);
+        insert_if_nonempty(map, "city", &client.city);
+    } else {
+        cvars.insert("client_country".into(), client.country_code.to_lowercase());
+        cvars.insert("client_region".into(), client.region.clone());
+        cvars.insert("client_city".into(), client.city.clone());
+    }
 }

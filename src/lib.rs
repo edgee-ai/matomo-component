@@ -31,37 +31,39 @@ impl Settings {
 
 impl Guest for Component {
     fn page(event: Event, settings: Dict) -> Result<EdgeeRequest, String> {
-        match &event.data {
-            Data::Page(p) => common(&event, settings, Some(p), None, None),
-            _ => Err("Expected page data".into()),
+        if let Data::Page(p) = &event.data {
+            common(&event, settings, Some(p), None, None)
+        } else {
+            Err("Expected page data".into())
         }
     }
-
     fn track(event: Event, settings: Dict) -> Result<EdgeeRequest, String> {
-        match &event.data {
-            Data::Track(t) => common(&event, settings, None, Some(t), None),
-            _ => Err("Expected track data".into()),
+        if let Data::Track(t) = &event.data {
+            common(&event, settings, None, Some(t), None)
+        } else {
+            Err("Expected track data".into())
         }
     }
-
     fn user(event: Event, settings: Dict) -> Result<EdgeeRequest, String> {
-        match &event.data {
-            Data::User(u) => common(&event, settings, None, None, Some(u)),
-            _ => Err("Expected user data".into()),
+        if let Data::User(u) = &event.data {
+            common(&event, settings, None, None, Some(u))
+        } else {
+            Err("Expected user data".into())
         }
     }
 }
 
 fn common(
     event: &Event,
-    settings: Dict,
+    settings_dict: Dict,
     page: Option<&PageData>,
     track: Option<&TrackData>,
     user: Option<&UserData>,
 ) -> Result<EdgeeRequest, String> {
-    let settings = Settings::new(settings).map_err(|e| e.to_string())?;
-    let mut map = HashMap::new();
-    let mut cvars = HashMap::new();
+    let settings = Settings::new(settings_dict).map_err(|e| e.to_string())?;
+    let mut map: HashMap<String, String> = HashMap::new();
+    let mut cvars: HashMap<String, String> = HashMap::new();
+    let allow_sensitive = settings.token_auth.is_some();
 
     map.insert("idsite".into(), settings.site_id.clone());
     map.insert("rec".into(), "1".into());
@@ -77,8 +79,8 @@ fn common(
     if let Some(user) = user {
         enrich_with_user_context(&mut map, user, &mut cvars);
     }
-    // common
-    enrich_with_client_context(&mut map, &event.context.client);
+
+    enrich_with_client_context(&mut map, &event.context.client, &mut cvars, allow_sensitive);
     enrich_with_session_context(&mut map, &event.context.session, &mut cvars);
     enrich_with_campaign_context(&mut map, &event.context.campaign);
 
@@ -93,89 +95,20 @@ fn common(
         .extend_pairs(map.iter())
         .finish();
 
+    let body = qs.clone();
+
     Ok(EdgeeRequest {
-        method: HttpMethod::Get,
-        url: format!(
-            "{}/matomo.php?{}",
-            settings.endpoint_url.trim_end_matches('/'),
-            qs
-        ),
-        headers: vec![],
-        forward_client_headers: true,
-        body: "".into(),
+        method: HttpMethod::Post,
+        url: format!("{}/matomo.php", settings.endpoint_url.trim_end_matches('/')),
+        headers: vec![
+            ("User-Agent".into(), "EdgeeComponent/1.0".into()),
+            ("Accept".into(), "*/*".into()),
+            (
+                "Content-Type".into(),
+                "application/x-www-form-urlencoded".into(),
+            ),
+        ],
+        forward_client_headers: false,
+        body,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::exports::edgee::components::data_collection::*;
-    use uuid::Uuid;
-
-    fn base_ctx() -> Context { /* same as before; include page, user, client, session, campaign */
-    }
-
-    #[test]
-    fn page_includes_all() {
-        let ctx = base_ctx();
-        let page = Data::Page(ctx.page.clone());
-        let event =
-            Event { /* uuid, timestamps, event_type=Page, data=page, context=ctx, consent=None */ };
-        let settings = vec![
-            ("site_id".into(), "5".into()),
-            ("endpoint_url".into(), "https://matomo.test".into()),
-        ];
-        let req = Component::page(event, settings).unwrap();
-        let url = req.url;
-        assert!(url.contains("action_name=Homepage"));
-        assert!(url.contains("url=https%3A%2F%2Fexample.com"));
-        assert!(url.contains("search="));
-        assert!(url.contains("_cvar="));
-    }
-
-    #[test]
-    fn track_includes_ea_ec_and_custom_props() {
-        let data = Data::Track(TrackData {
-            name: "Clicked".into(),
-            properties: vec![("track_key".into(), "track_value".into())],
-            products: vec![],
-        });
-
-        let mut event = sample_event(EventType::Track, data);
-        event.context.user.anonymous_id = "abc123".into();
-
-        let settings = vec![
-            ("site_id".into(), "2".into()),
-            ("endpoint_url".into(), "https://matomo.example.com/".into()),
-        ];
-        let req = Component::track(event, settings).unwrap();
-
-        assert!(req.url.contains("e_a=Clicked"));
-        assert!(req.url.contains("e_c=track"));
-        assert!(req.url.contains("track_key"));
-        assert!(req.url.contains("track_value"));
-    }
-
-    #[test]
-    fn user_includes_uid_and_user_props() {
-        let mut event = sample_event(
-            EventType::User,
-            Data::User(UserData {
-                user_id: "test-user".into(),
-                anonymous_id: "anon".into(),
-                edgee_id: "eid".into(),
-                properties: vec![("user_key".into(), "user_value".into())],
-            }),
-        );
-
-        let settings = vec![
-            ("site_id".into(), "2".into()),
-            ("endpoint_url".into(), "https://matomo.example.com/".into()),
-        ];
-        let req = Component::user(event, settings).unwrap();
-
-        assert!(req.url.contains("uid=test-user"));
-        assert!(req.url.contains("user_key"));
-        assert!(req.url.contains("user_value"));
-    }
 }

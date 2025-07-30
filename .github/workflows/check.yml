@@ -1,0 +1,92 @@
+name: Check
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  EDGEE_API_TOKEN: ${{ secrets.EDGEE_API_TOKEN }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: wasm32-wasip2
+          components: rustfmt
+      - uses: edgee-cloud/install-edgee-cli@v0.2.0
+      - run: edgee component wit
+      - run: cargo check
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: wasm32-wasip2
+          components: rustfmt
+      - uses: edgee-cloud/install-edgee-cli@v0.2.0
+      - run: edgee component wit
+      - uses: actions-rust-lang/rustfmt@v1
+
+  clippy:
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: wasm32-wasip2
+          components: clippy
+      - uses: edgee-cloud/install-edgee-cli@v0.2.0
+      - run: edgee component wit
+      - uses: wearerequired/lint-action@master
+        with:
+          clippy: true
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: wasm32-wasip2
+      - uses: edgee-cloud/install-edgee-cli@v0.2.0
+      - run: edgee component build
+      - name: Verify .wasm file exists
+        run: |
+          if [ ! -f "./matomo.wasm" ]; then
+            echo "❌ Error: matomo.wasm not found" >&2
+            exit 1
+          fi
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: wasm32-wasip2
+      - uses: edgee-cloud/install-edgee-cli@v0.2.0
+      - run: edgee component wit
+      - run: cargo test
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: wasm32-wasip2
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: edgee-cloud/install-edgee-cli@v0.2.0
+      - run: edgee component wit
+      - run: make test.coverage.lcov
+      - uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./lcov.info
