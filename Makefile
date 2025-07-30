@@ -20,3 +20,6 @@ test.coverage:
 
 test.coverage.html:
 	cargo llvm-cov --all-features --open
+
+test.coverage.lcov:
+	cargo llvm-cov --lcov --output-path lcov.info
