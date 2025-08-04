@@ -11,6 +11,16 @@ pub fn insert_if_nonempty(map: &mut HashMap<String, String>, key: &str, value: &
     }
 }
 
+/// Converts a map of custom properties into a Matomo-compatible `_cvar` JSON string.
+///
+/// Matomo supports up to 5 custom variables per event, encoded as:
+/// `{ "1": ["key", "value"], "2": ["key", "value"], ... }`
+///
+/// - Filters out empty values
+/// - Keeps only the first 5 entries (Matomo limit)
+/// - Returns `None` if no valid entries remain
+///
+/// Used to enrich tracking requests with contextual metadata.
 pub fn to_cvar(mut vars: HashMap<String, String>) -> Option<String> {
     vars.retain(|_, v| !v.trim().is_empty());
     if vars.is_empty() {
