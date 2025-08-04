@@ -6,7 +6,7 @@ version = "0.2.7"
 
 category = "data-collection"
 subcategory = "analytics"
-description = "Example Rust component for data collection"
+description = "Edgee Component: Matomo Tracker – Collect and send page views, events, and user data to Matomo from the Edge network, leveraging Rust and WebAssembly. Supports automatic mapping of Edgee event context to Matomo Tracking API."
 documentation = "https://github.com/edgee-cloud/matomo-component"
 repository = "https://github.com/edgee-cloud/matomo-component"
 language = "Rust"
