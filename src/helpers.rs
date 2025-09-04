@@ -58,7 +58,7 @@ pub fn enrich_with_page_context(
     if !page.keywords.is_empty() {
         cvars.insert(
             "page_keywords".into(),
-            serde_json::to_string(&page.keywords).unwrap(),
+            page.keywords.join(","),
         );
     }
 }

@@ -76,6 +76,12 @@ fn common(
     map.insert("apiv".into(), "1".into());
     map.insert("rand".into(), event.timestamp_millis.to_string());
 
+    enrich_with_page_context(&mut map, &event.context.page, &mut cvars);
+    enrich_with_user_context(&mut map, &event.context.user, &mut cvars);
+    enrich_with_client_context(&mut map, &event.context.client, &mut cvars, allow_sensitive);
+    enrich_with_session_context(&mut map, &event.context.session, &mut cvars);
+    enrich_with_campaign_context(&mut map, &event.context.campaign);
+
     if let Some(page) = page {
         enrich_with_page_context(&mut map, page, &mut cvars);
     }
@@ -85,10 +91,6 @@ fn common(
     if let Some(user) = user {
         enrich_with_user_context(&mut map, user, &mut cvars);
     }
-
-    enrich_with_client_context(&mut map, &event.context.client, &mut cvars, allow_sensitive);
-    enrich_with_session_context(&mut map, &event.context.session, &mut cvars);
-    enrich_with_campaign_context(&mut map, &event.context.campaign);
 
     if let Some(cv) = to_cvar(cvars) {
         map.insert("_cvar".into(), cv);
