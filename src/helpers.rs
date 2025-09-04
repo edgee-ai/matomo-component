@@ -56,10 +56,7 @@ pub fn enrich_with_page_context(
     }
 
     if !page.keywords.is_empty() {
-        cvars.insert(
-            "page_keywords".into(),
-            page.keywords.join(","),
-        );
+        cvars.insert("page_keywords".into(), page.keywords.join(","));
     }
 }
 
