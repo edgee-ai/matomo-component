@@ -22,8 +22,14 @@ impl Settings {
     pub fn new(settings: Dict) -> anyhow::Result<Self> {
         let map = settings.into_iter().collect::<HashMap<_, _>>();
         Ok(Self {
-            site_id: map.get("site_id").ok_or_else(|| anyhow::anyhow!("Missing site_id setting"))?,
-            endpoint_url: map.get("endpoint_url").ok_or_else(|| anyhow::anyhow!("Missing endpoint_url setting")),
+            site_id: map
+                .get("site_id")
+                .ok_or_else(|| anyhow::anyhow!("Missing site_id setting"))?
+                .to_string(),
+            endpoint_url: map
+                .get("endpoint_url")
+                .ok_or_else(|| anyhow::anyhow!("Missing endpoint_url setting"))?
+                .to_string(),
             token_auth: map.get("authentication_token").cloned(),
         })
     }
