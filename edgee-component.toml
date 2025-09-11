@@ -1,0 +1,77 @@
+manifest-version = 1
+
+[component]
+name = "matomo"
+version = "0.2.8"
+
+category = "data-collection"
+subcategory = "analytics"
+description = """
+## Overview
+
+The **Matomo Analytics Component** by Edgee allows you to seamlessly send analytics events from your applications directly to **Matomo** via server-side requests at the edge.
+
+This component is designed for developers who want to enhance user tracking and analytics accuracy while reducing the dependency on client-side SDKs and JavaScript trackers. It leverages Edgee’s edge computing platform to process and forward events with low latency and full privacy control.
+
+---
+
+## 🔑 Key Features & Benefits
+
+### Features
+
+- **Server-Side Event Forwarding**: Send page views, custom events, and user data directly to your Matomo instance from the edge
+- **SDK-Free Tracking**: Avoid adding heavy analytics SDKs to your frontend—no JS tracker required
+- **Data Privacy & Compliance**: By moving tracking to the server-side, you can better align with GDPR and other privacy regulations
+- **Token-Based Access Control**: Automatically include `token_auth` when needed to access restricted Matomo features
+- **Context-Aware**: Enrich events with client, session, campaign, and device context captured by Edgee
+
+### Benefits
+
+- **More Reliable Analytics**: Bypass ad blockers and JavaScript restrictions that prevent accurate tracking
+- **Better Performance**: Reduce frontend payload and latency by offloading tracking to the edge
+- **Flexible & Customizable**: Easily extend the logic for your specific tracking needs (e.g., custom variables, campaigns, ecommerce)
+- **Works with Your Existing Matomo Instance**: Integrates with any hosted Matomo setup, including Matomo Cloud
+
+---
+
+## Use Cases
+
+- **Website Analytics**: Capture real-time page views and user journeys across your site
+- **Custom Event Tracking**: Track actions like form submissions, clicks, or product views without client JS
+- **Authenticated User Tracking**: Send user IDs or properties securely without exposing them in the frontend
+- **Marketing Campaign Attribution**: Pass campaign metadata (UTMs, source, medium, etc.) from Edgee context into Matomo
+
+---
+
+## Additional Resources
+
+- Matomo Developer Docs: https://developer.matomo.org/api-reference/tracking-api
+"""
+documentation = "https://github.com/edgee-cloud/matomo-component"
+repository = "https://github.com/edgee-cloud/matomo-component"
+language = "Rust"
+wit-version = "1.0.0"
+icon-path = "matomo.png"
+
+[component.build]
+command = "cargo build --target wasm32-wasip2 --release --target-dir ./target && rm -f ./matomo.wasm && mv ./target/wasm32-wasip2/release/matomo.wasm ./matomo.wasm"
+output_path = "matomo.wasm"
+
+[component.settings.authentication_token]
+title = "Matomo Authentication Token"
+type = "string"
+required = false
+description = "Optional token used for authenticated tracking (e.g. for IP override or retroactive events). You can generate it in your Matomo user settings under the Security tab."
+secret = true
+
+[component.settings.site_id]
+title = "Matomo Site ID"
+type = "string"
+required = true
+description = "The numerical site ID from your Matomo dashboard used to identify which site the data belongs to."
+
+[component.settings.endpoint_url]
+title = "Matomo Endpoint URL"
+type = "string"
+required = true
+description = "The base URL of your Matomo instance, including protocol (e.g., https://matomo.example.com/)."
