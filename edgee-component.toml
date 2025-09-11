@@ -47,7 +47,7 @@ This component is designed for developers who want to enhance user tracking and 
 
 - Matomo Developer Docs: https://developer.matomo.org/api-reference/tracking-api
 """
-documentation = "https://github.com/edgee-cloud/matomo-component"
+documentation = "https://www.edgee.cloud/docs/components/data-collection/matomo"
 repository = "https://github.com/edgee-cloud/matomo-component"
 language = "Rust"
 wit-version = "1.0.0"
