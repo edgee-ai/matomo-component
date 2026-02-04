@@ -1,9 +1,9 @@
 <div align="center">
 <p align="center">
-  <a href="https://www.edgee.cloud">
+  <a href="https://www.edgee.ai">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.edgee.cloud/img/component-dark.svg">
-      <img src="https://cdn.edgee.cloud/img/component.svg" height="100" alt="Edgee">
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.edgee.ai/img/component-dark.svg">
+      <img src="https://cdn.edgee.ai/img/component.svg" height="100" alt="Edgee">
     </picture>
   </a>
 </p>
@@ -11,9 +11,9 @@
 
 <h1 align="center">Matomo component for Edgee</h1>
 
-[![Coverage Status](https://coveralls.io/repos/github/edgee-cloud/matomo-component/badge.svg)](https://coveralls.io/github/edgee-cloud/matomo-component)
-[![GitHub issues](https://img.shields.io/github/issues/edgee-cloud/matomo-component.svg)](https://github.com/edgee-cloud/matomo-component/issues)
-[![Edgee Component Registry](https://img.shields.io/badge/Edgee_Component_Registry-Public-green.svg)](https://www.edgee.cloud/edgee/matomo)
+[![Coverage Status](https://coveralls.io/repos/github/edgee-ai/matomo-component/badge.svg)](https://coveralls.io/github/edgee-ai/matomo-component)
+[![GitHub issues](https://img.shields.io/github/issues/edgee-ai/matomo-component.svg)](https://github.com/edgee-ai/matomo-component/issues)
+[![Edgee Component Registry](https://img.shields.io/badge/Edgee_Component_Registry-Public-green.svg)](https://www.edgee.ai/edgee/matomo)
 
 This is a Rust-based Edgee component that integrates Matomo analytics using the Edgee Data Collection protocol. It allows you to send user events, page views, and user identity data directly to your Matomo instance from the edge.
 
@@ -89,4 +89,4 @@ matomo-component/
 ### 📚 Learn More
 
 - [Matomo Tracking API](https://matomo.org/docs/tracking-api/)
-- [Edgee Developer Guide](https://www.edgee.cloud/docs/services/registry/developer-guide)
+- [Edgee Developer Guide](https://www.edgee.ai/docs/services/registry/developer-guide)
